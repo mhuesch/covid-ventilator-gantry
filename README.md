@@ -1,6 +1,17 @@
 # Setup
 
-### backend
+### 1. Prerequisites
+
+`pip3` and `python3` must be on your path.
+
+This has only been tested with
+
+```
+Python 3.7.6
+pip 19.3.1 (python 3.7)
+```
+
+### 2. Backend
 
 ```
 $ cd backend
@@ -12,7 +23,7 @@ $ pip3 install -r requirements.txt
 $ python3 main.py
 ```
 
-### frontend
+### 3. Frontend
 
 Browse to http://localhost:5000/
 
@@ -26,6 +37,8 @@ Browse to http://localhost:5000/
 * The frontend displays the video feed, with an overlay in Javascript
   * Coordinates of the clicks on the overlay are sent to backend
 * Backend prints out the coordinates
+
+---
 
 # TODO
 
