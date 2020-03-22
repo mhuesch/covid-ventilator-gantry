@@ -1,93 +1,694 @@
 <!DOCTYPE html>
 <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>UV4L WebRTC</title>
+        <style type="text/css">
+        #contentContainer {
+            width: 640px;
+            height: 480px;
+            margin: 0px;
+            border: 1px black solid;
+            overflow: hidden;
+            background-color: rgba(255, 255, 255, 0);
+            cursor: pointer;
+        }
+        #thing {
+            position: relative;
+            left: 0px;
+            top: 0px;
+            transition: left .5s ease-in, top .5s ease-in;
+        }
+        </style>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+        <script src="//www.kirupa.com/prefixfree.min.js"></script>
+        <script type="text/javascript">
 
-<!-- This is copied almost-verbatim from https://www.kirupa.com/snippets/move_element_to_click_position.htm -->
+            // WebRTC
+            function httpGetAsync(theUrl, callback) {
+                try {
+                    var xmlHttp = new XMLHttpRequest();
+                    xmlHttp.onreadystatechange = function () {
+                        if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                            callback(xmlHttp.responseText);
+                        }
+                    };
+                    xmlHttp.open("GET", theUrl, true); // true for asynchronous
+                    xmlHttp.send(null);
+                } catch (e) {
+                    console.error(e);
+                }
+            }
 
-<head>
-<title>Move to Click Position</title>
-<style type="text/css">
-body {
-    background-color: #FFF;
-    margin: 30px;
-    margin-top: 10px;
-}
-#contentContainer {
-    width: 550px;
-    height: 350px;
-    border: 5px black solid;
-    overflow: hidden;
-    background-color: #F2F2F2;
-    cursor: pointer;
-}
-#thing {
-    position: relative;
-    left: 50px;
-    top: 50px;
-    transition: left .5s ease-in, top .5s ease-in;
-}
-</style>
-</head>
+            var signalling_server_hostname = location.hostname || "127.0.0.1";
+            // var signalling_server_address = signalling_server_hostname + ':' + (location.port || (location.protocol === 'https:' ? 443 : 80));
+            var signalling_server_address = signalling_server_hostname + ':8080';
+            var isFirefox = typeof InstallTrigger !== 'undefined';// Firefox 1.0+
 
-<body>
-<div id="contentContainer">
-    <img id="thing" src="//www.kirupa.com/images/smiley_red.png">
-</div>
+            addEventListener("DOMContentLoaded", function () {
+                document.getElementById('signalling_server').value = signalling_server_address;
+            });
 
-<script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
-<script src="//www.kirupa.com/prefixfree.min.js"></script>
-<script>
+            var ws = null;
+            var pc;
+            var gn;
+            var datachannel, localdatachannel;
+            var audio_video_stream;
+            var recordedBlobs;
+            var pcConfig = {/*sdpSemantics : "plan-b"*,*/ "iceServers": [
+                    {"urls": ["stun:stun.l.google.com:19302", "stun:" + signalling_server_hostname + ":3478"]}
+                ]};
+            var pcOptions = {
+                optional: [
+                    // Deprecated:
+                    //{RtpDataChannels: false},
+                    //{DtlsSrtpKeyAgreement: true}
+                ]
+            };
+            var mediaConstraints = {
+                optional: [],
+                mandatory: {
+                    OfferToReceiveAudio: true,
+                    OfferToReceiveVideo: true
+                }
+            };
+            var keys = [];
+            var trickle_ice = true;
+            var remoteDesc = false;
+            var iceCandidates = [];
 
-// SocketIO
-var socket = io();
-socket.on('connect', function() {
-  socket.emit('my event', {data: 'I\'m connected!'});
-});
-socket.on('my response', function(data) {
-  console.log(data);
-});
+            RTCPeerConnection = window.RTCPeerConnection || /*window.mozRTCPeerConnection ||*/ window.webkitRTCPeerConnection;
+            RTCSessionDescription = /*window.mozRTCSessionDescription ||*/ window.RTCSessionDescription;
+            RTCIceCandidate = /*window.mozRTCIceCandidate ||*/ window.RTCIceCandidate;
+            navigator.getUserMedia = navigator.getUserMedia || navigator.mozGetUserMedia || navigator.webkitGetUserMedia || navigator.msGetUserMedia;
+            var URL = window.URL || window.webkitURL;
 
-// Box
-var theThing = document.querySelector("#thing");
-var container = document.querySelector("#contentContainer");
+            function createPeerConnection() {
+                try {
+                    var pcConfig_ = pcConfig;
+                    try {
+                        ice_servers = document.getElementById('ice_servers').value;
+                        if (ice_servers) {
+                            pcConfig_.iceServers = JSON.parse(ice_servers);
+                        }
+                    } catch (e) {
+                        alert(e + "\nExample: "
+                                + '\n[ {"urls": "stun:stun1.example.net"}, {"urls": "turn:turn.example.org", "username": "user", "credential": "myPassword"} ]'
+                                + "\nContinuing with built-in RTCIceServer array");
+                    }
+                    console.log(JSON.stringify(pcConfig_));
+                    pc = new RTCPeerConnection(pcConfig_, pcOptions);
+                    pc.onicecandidate = onIceCandidate;
+                    if ('ontrack' in pc) {
+                        pc.ontrack = onTrack;
+                    } else {
+                        pc.onaddstream = onRemoteStreamAdded; // deprecated
+                    }
+                    pc.onremovestream = onRemoteStreamRemoved;
+                    pc.ondatachannel = onDataChannel;
+                    console.log("peer connection successfully created!");
+                } catch (e) {
+                    console.error("createPeerConnection() failed");
+                }
+            }
 
-container.addEventListener("click", getClickPosition, false);
+            function onDataChannel(event) {
+                console.log("onDataChannel()");
+                datachannel = event.channel;
 
-function getClickPosition(e) {
-    var parentPosition = getPosition(e.currentTarget);
-    var xPosition = e.clientX - parentPosition.x - (theThing.clientWidth / 2);
-    var yPosition = e.clientY - parentPosition.y - (theThing.clientHeight / 2);
+                event.channel.onopen = function () {
+                    console.log("Data Channel is open!");
+                };
 
-    theThing.style.left = xPosition + "px";
-    theThing.style.top = yPosition + "px";
-    socket.emit('coordinates', {data: {'x': xPosition, 'y': yPosition}})
-}
+                event.channel.onerror = function (error) {
+                    console.error("Data Channel Error:", error);
+                };
 
-// Helper function to get an element's exact position
-function getPosition(el) {
-  var xPos = 0;
-  var yPos = 0;
+                event.channel.onmessage = function (event) {
+                    console.log("Got Data Channel Message:", event.data);
+                };
 
-  while (el) {
-    if (el.tagName == "BODY") {
-      // deal with browser quirks with body/window/document and page scroll
-      var xScroll = el.scrollLeft || document.documentElement.scrollLeft;
-      var yScroll = el.scrollTop || document.documentElement.scrollTop;
+                event.channel.onclose = function () {
+                    datachannel = null;
+                    console.log("The Data Channel is Closed");
+                };
+            }
 
-      xPos += (el.offsetLeft - xScroll + el.clientLeft);
-      yPos += (el.offsetTop - yScroll + el.clientTop);
-    } else {
-      // for all other non-BODY elements
-      xPos += (el.offsetLeft - el.scrollLeft + el.clientLeft);
-      yPos += (el.offsetTop - el.scrollTop + el.clientTop);
-    }
+            function onIceCandidate(event) {
+                if (event.candidate) {
+                    var candidate = {
+                        sdpMLineIndex: event.candidate.sdpMLineIndex,
+                        sdpMid: event.candidate.sdpMid,
+                        candidate: event.candidate.candidate
+                    };
+                    var request = {
+                        what: "addIceCandidate",
+                        data: JSON.stringify(candidate)
+                    };
+                    ws.send(JSON.stringify(request));
+                } else {
+                    console.log("End of candidates.");
+                }
+            }
 
-    el = el.offsetParent;
-  }
-  return {
-    x: xPos,
-    y: yPos
-  };
-}
-</script>
-</body>
+            function addIceCandidates() {
+                iceCandidates.forEach(function (candidate) {
+                    pc.addIceCandidate(candidate,
+                        function () {
+                            console.log("IceCandidate added: " + JSON.stringify(candidate));
+                        },
+                        function (error) {
+                            console.error("addIceCandidate error: " + error);
+                        }
+                    );
+                });
+                iceCandidates = [];
+            }
+
+            function onRemoteStreamAdded(event) {
+                console.log("Remote stream added:", event.stream);
+                var remoteVideoElement = document.getElementById('remote-video');
+                remoteVideoElement.srcObect = event.stream;
+                //remoteVideoElement.play();
+            }
+
+            function onTrack(event) {
+                console.log("Remote track!");
+                var remoteVideoElement = document.getElementById('remote-video');
+                remoteVideoElement.srcObject = event.streams[0];
+                //remoteVideoElement.play();
+            }
+
+            function onRemoteStreamRemoved(event) {
+                var remoteVideoElement = document.getElementById('remote-video');
+                remoteVideoElement.srcObject = null;
+                remoteVideoElement.src = ''; // TODO: remove
+            }
+
+            function start() {
+                if ("WebSocket" in window) {
+                    document.getElementById("stop").disabled = false;
+                    document.getElementById("start").disabled = true;
+                    document.documentElement.style.cursor = 'wait';
+                    var server = document.getElementById("signalling_server").value.toLowerCase();
+
+                    var protocol = location.protocol === "https:" ? "wss:" : "ws:";
+                    ws = new WebSocket(protocol + '//' + server + '/stream/webrtc');
+
+                    function call(stream) {
+                        iceCandidates = [];
+                        remoteDesc = false;
+                        createPeerConnection();
+                        if (stream) {
+                            pc.addStream(stream);
+                        }
+                        var request = {
+                            what: "call",
+                            options: {
+                                force_hw_vcodec: document.getElementById("remote_hw_vcodec").checked,
+                                vformat: document.getElementById("remote_vformat").value,
+                                trickle_ice: trickleice_selection()
+                            }
+                        };
+                        ws.send(JSON.stringify(request));
+                        console.log("call(), request=" + JSON.stringify(request));
+                    }
+
+                    ws.onopen = function () {
+                        console.log("onopen()");
+
+                        audio_video_stream = null;
+
+                        call();
+                    };
+
+                    ws.onmessage = function (evt) {
+                        var msg = JSON.parse(evt.data);
+                        if (msg.what !== 'undefined') {
+                            var what = msg.what;
+                            var data = msg.data;
+                        }
+                        //console.log("message=" + msg);
+                        console.log("message =" + what);
+
+                        switch (what) {
+                            case "offer":
+                                pc.setRemoteDescription(new RTCSessionDescription(JSON.parse(data)),
+                                        function onRemoteSdpSuccess() {
+                                            remoteDesc = true;
+                                            addIceCandidates();
+                                            console.log('onRemoteSdpSucces()');
+                                            pc.createAnswer(function (sessionDescription) {
+                                                pc.setLocalDescription(sessionDescription);
+                                                var request = {
+                                                    what: "answer",
+                                                    data: JSON.stringify(sessionDescription)
+                                                };
+                                                ws.send(JSON.stringify(request));
+                                                console.log(request);
+
+                                            }, function (error) {
+                                                alert("Failed to createAnswer: " + error);
+
+                                            }, mediaConstraints);
+                                        },
+                                        function onRemoteSdpError(event) {
+                                            alert('Failed to set remote description (unsupported codec on this browser?): ' + event);
+                                            stop();
+                                        }
+                                );
+
+                                /*
+                                 * No longer needed, it's implicit in "call"
+                                var request = {
+                                    what: "generateIceCandidates"
+                                };
+                                console.log(request);
+                                ws.send(JSON.stringify(request));
+                                */
+                                break;
+
+                            case "answer":
+                                break;
+
+                            case "message":
+                                alert(msg.data);
+                                break;
+
+                            case "iceCandidate": // when trickle is enabled
+                                if (!msg.data) {
+                                    console.log("Ice Gathering Complete");
+                                    break;
+                                }
+                                var elt = JSON.parse(msg.data);
+                                let candidate = new RTCIceCandidate({sdpMLineIndex: elt.sdpMLineIndex, candidate: elt.candidate});
+                                iceCandidates.push(candidate);
+                                if (remoteDesc)
+                                    addIceCandidates();
+                                document.documentElement.style.cursor = 'default';
+                                break;
+
+                            case "iceCandidates": // when trickle ice is not enabled
+                                var candidates = JSON.parse(msg.data);
+                                for (var i = 0; candidates && i < candidates.length; i++) {
+                                    var elt = candidates[i];
+                                    let candidate = new RTCIceCandidate({sdpMLineIndex: elt.sdpMLineIndex, candidate: elt.candidate});
+                                    iceCandidates.push(candidate);
+                                }
+                                if (remoteDesc)
+                                    addIceCandidates();
+                                document.documentElement.style.cursor = 'default';
+                                break;
+                        }
+                    };
+
+                    ws.onclose = function (evt) {
+                        if (pc) {
+                            pc.close();
+                            pc = null;
+                        }
+                        document.getElementById("stop").disabled = true;
+                        document.getElementById("start").disabled = false;
+                        document.documentElement.style.cursor = 'default';
+                    };
+
+                    ws.onerror = function (evt) {
+                        alert("An error has occurred!");
+                        ws.close();
+                    };
+
+                } else {
+                    alert("Sorry, this browser does not support WebSockets.");
+                }
+            }
+
+            function stop() {
+                if (datachannel) {
+                    console.log("closing data channels");
+                    datachannel.close();
+                    datachannel = null;
+                }
+                if (localdatachannel) {
+                    console.log("closing local data channels");
+                    localdatachannel.close();
+                    localdatachannel = null;
+                }
+                if (audio_video_stream) {
+                    try {
+                        if (audio_video_stream.getVideoTracks().length)
+                            audio_video_stream.getVideoTracks()[0].stop();
+                        if (audio_video_stream.getAudioTracks().length)
+                            audio_video_stream.getAudioTracks()[0].stop();
+                        audio_video_stream.stop(); // deprecated
+                    } catch (e) {
+                        for (var i = 0; i < audio_video_stream.getTracks().length; i++)
+                            audio_video_stream.getTracks()[i].stop();
+                    }
+                    audio_video_stream = null;
+                }
+                document.getElementById('remote-video').srcObject = null;
+                document.getElementById('remote-video').src = ''; // TODO; remove
+                if (pc) {
+                    pc.close();
+                    pc = null;
+                }
+                if (ws) {
+                    ws.close();
+                    ws = null;
+                }
+                document.getElementById("stop").disabled = true;
+                document.getElementById("start").disabled = false;
+                document.documentElement.style.cursor = 'default';
+            }
+
+            function mute() {
+                var remoteVideo = document.getElementById("remote-video");
+                remoteVideo.muted = !remoteVideo.muted;
+            }
+
+            function pause() {
+                var remoteVideo = document.getElementById("remote-video");
+                if (remoteVideo.paused)
+                    remoteVideo.play();
+                else
+                    remoteVideo.pause();
+            }
+
+            function fullscreen() {
+                var remoteVideo = document.getElementById("remote-video");
+                if (remoteVideo.requestFullScreen) {
+                    remoteVideo.requestFullScreen();
+                } else if (remoteVideo.webkitRequestFullScreen) {
+                    remoteVideo.webkitRequestFullScreen();
+                } else if (remoteVideo.mozRequestFullScreen) {
+                    remoteVideo.mozRequestFullScreen();
+                }
+            }
+
+            function handleDataAvailable(event) {
+                //console.log(event);
+                if (event.data && event.data.size > 0) {
+                    recordedBlobs.push(event.data);
+                }
+            }
+
+            function handleStop(event) {
+                recorder = null;
+                var superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
+            }
+
+            function remote_hw_vcodec_selection() {
+                if (!document.getElementById('remote_hw_vcodec').checked)
+                    unselect_remote_hw_vcodec();
+                else
+                    select_remote_hw_vcodec();
+            }
+
+            function remote_hw_vcodec_format_selection() {
+                if (document.getElementById('remote_hw_vcodec').checked)
+                    remote_hw_vcodec_selection();
+            }
+
+            function select_remote_hw_vcodec() {
+                document.getElementById('remote_hw_vcodec').checked = true;
+                var vformat = document.getElementById('remote_vformat').value;
+                switch (vformat) {
+                    case '5':
+                        document.getElementById('remote-video').style.width = "320px";
+                        document.getElementById('remote-video').style.height = "240px";
+                        break;
+                    case '10':
+                        document.getElementById('remote-video').style.width = "320px";
+                        document.getElementById('remote-video').style.height = "240px";
+                        break;
+                    case '20':
+                        document.getElementById('remote-video').style.width = "352px";
+                        document.getElementById('remote-video').style.height = "288px";
+                        break;
+                    case '25':
+                        document.getElementById('remote-video').style.width = "640px";
+                        document.getElementById('remote-video').style.height = "480px";
+                        break;
+                    case '30':
+                        document.getElementById('remote-video').style.width = "640px";
+                        document.getElementById('remote-video').style.height = "480px";
+                        break;
+                    case '35':
+                        document.getElementById('remote-video').style.width = "800px";
+                        document.getElementById('remote-video').style.height = "480px";
+                        break;
+                    case '40':
+                        document.getElementById('remote-video').style.width = "960px";
+                        document.getElementById('remote-video').style.height = "720px";
+                        break;
+                    case '50':
+                        document.getElementById('remote-video').style.width = "1024px";
+                        document.getElementById('remote-video').style.height = "768px";
+                        break;
+                    case '55':
+                        document.getElementById('remote-video').style.width = "1280px";
+                        document.getElementById('remote-video').style.height = "720px";
+                        break;
+                    case '60':
+                        document.getElementById('remote-video').style.width = "1280px";
+                        document.getElementById('remote-video').style.height = "720px";
+                        break;
+                    case '63':
+                        document.getElementById('remote-video').style.width = "1280px";
+                        document.getElementById('remote-video').style.height = "720px";
+                        break;
+                    case '65':
+                        document.getElementById('remote-video').style.width = "1280px";
+                        document.getElementById('remote-video').style.height = "768px";
+                        break;
+                    case '70':
+                        document.getElementById('remote-video').style.width = "1280px";
+                        document.getElementById('remote-video').style.height = "768px";
+                        break;
+                    case '75':
+                        document.getElementById('remote-video').style.width = "1536px";
+                        document.getElementById('remote-video').style.height = "768px";
+                        break;
+                    case '80':
+                        document.getElementById('remote-video').style.width = "1280px";
+                        document.getElementById('remote-video').style.height = "960px";
+                        break;
+                    case '90':
+                        document.getElementById('remote-video').style.width = "1600px";
+                        document.getElementById('remote-video').style.height = "768px";
+                        break;
+                    case '95':
+                        document.getElementById('remote-video').style.width = "1640px";
+                        document.getElementById('remote-video').style.height = "1232px";
+                        break;
+                    case '97':
+                        document.getElementById('remote-video').style.width = "1640px";
+                        document.getElementById('remote-video').style.height = "1232px";
+                        break;
+                    case '98':
+                        document.getElementById('remote-video').style.width = "1792px";
+                        document.getElementById('remote-video').style.height = "896px";
+                        break;
+                    case '99':
+                        document.getElementById('remote-video').style.width = "1792px";
+                        document.getElementById('remote-video').style.height = "896px";
+                        break;
+                    case '100':
+                        document.getElementById('remote-video').style.width = "1920px";
+                        document.getElementById('remote-video').style.height = "1080px";
+                        break;
+                    case '105':
+                        document.getElementById('remote-video').style.width = "1920px";
+                        document.getElementById('remote-video').style.height = "1080px";
+                        break;
+                    default:
+                        document.getElementById('remote-video').style.width = "1280px";
+                        document.getElementById('remote-video').style.height = "720px";
+                }
+                /*
+                 // Disable video casting. Not supported at the moment with hw codecs.
+                 var elements = document.getElementsByName('video_cast');
+                 for(var i = 0; i < elements.length; i++) {
+                 elements[i].checked = false;
+                 }
+                 */
+            }
+
+            function unselect_remote_hw_vcodec() {
+                document.getElementById('remote_hw_vcodec').checked = false;
+                document.getElementById('remote-video').style.width = "640px";
+                document.getElementById('remote-video').style.height = "480px";
+            }
+
+            function trickleice_selection() {
+                if (document.getElementById('trickleice').value === "false") {
+                    trickle_ice = false;
+                } else if (document.getElementById('trickleice').value === "true") {
+                    trickle_ice = true;
+                } else {
+                    trickle_ice = null;
+                }
+                return trickle_ice;
+            }
+
+            window.onload = function () {
+
+                // SocketIO
+                var socket = io();
+                socket.on('connect', function() {
+                  socket.emit('my event', {data: 'I\'m connected!'});
+                });
+                socket.on('my response', function(data) {
+                  console.log(data);
+                });
+
+                // Box
+                var theThing = document.querySelector("#thing");
+                var contentContainer = document.querySelector("#contentContainer");
+
+                contentContainer.addEventListener("click", getClickPosition, false);
+
+                // Coordinates
+                function getClickPosition(e) {
+                    var parentPosition = getPosition(e.currentTarget);
+                    var xPosition = e.clientX - parentPosition.x - (theThing.clientWidth / 2);
+                    var yPosition = e.clientY - parentPosition.y - (theThing.clientHeight / 2);
+
+                    theThing.style.left = xPosition + "px";
+                    theThing.style.top = yPosition + "px";
+                    socket.emit('coordinates', {data: {'x': xPosition, 'y': yPosition}})
+                }
+
+                // Helper function to get an element's exact position
+                function getPosition(el) {
+                  var xPos = 0;
+                  var yPos = 0;
+
+                  while (el) {
+                    if (el.tagName == "BODY") {
+                      // deal with browser quirks with body/window/document and page scroll
+                      var xScroll = el.scrollLeft || document.documentElement.scrollLeft;
+                      var yScroll = el.scrollTop || document.documentElement.scrollTop;
+
+                      xPos += (el.offsetLeft - xScroll + el.clientLeft);
+                      yPos += (el.offsetTop - yScroll + el.clientTop);
+                    } else {
+                      // for all other non-BODY elements
+                      xPos += (el.offsetLeft - el.scrollLeft + el.clientLeft);
+                      yPos += (el.offsetTop - el.scrollTop + el.clientTop);
+                    }
+
+                    el = el.offsetParent;
+                  }
+                  return {
+                    x: xPos,
+                    y: yPos
+                  };
+                }
+
+                if (false) {
+                    start();
+                }
+            };
+
+            window.onbeforeunload = function () {
+                if (ws) {
+                    ws.onclose = function () {}; // disable onclose handler first
+                    stop();
+                }
+            };
+
+        </script>
+        <style>
+            #container {
+                display: flex;
+                flex-flow: row nowrap;
+                align-items: flex-end;
+            }
+            video {
+                background: #eee none repeat scroll 0 0;
+                border: 1px solid #aaa;
+            }
+            .overlayWrapper {
+                position: relative;
+            }
+            .overlayWrapper .overlay {
+                position: absolute;
+                top: 0;
+                left: 5px;
+            }
+            p {
+                margin: 0.125em;
+            }
+            small {
+                font-size: smaller;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>
+            <span>WebRTC Webcam Stream Viewer</span>
+        </h1>
+        <div id="container">
+            <div class="overlayWrapper">
+                <video id="remote-video" autoplay="" width="640" height="480">
+                    Your browser does not support the video tag.
+                </video>
+                <div id="contentContainer" class="overlay">
+                    <img id="thing" src="//www.kirupa.com/images/smiley_red.png">
+                </div>
+            </div>
+        </div>
+        <div id="controls">
+            <button type=button id="fullscreen" onclick="fullscreen();">Fullscreen</button>
+        </div>
+        <fieldset>
+            <legend><b>Remote peer options</b></legend>
+            <div>
+                <span>Video:</span>
+                <label><input type="checkbox" onclick="remote_hw_vcodec_selection();"  id="remote_hw_vcodec" name="remote_hw_vcodec" value="remote_hw_vcodec" title="try to force the use of the hardware codec for both encoding and decoding if enabled and supported">force use of hardware codec for</label>
+                <select id="remote_vformat" name="remote_vformat" onclick="remote_hw_vcodec_format_selection();" title="available resolutions and frame rates at the min., max. and start configured bitrates for adaptive streaming which will be scaled from the base 720p 30fps">
+                    <option value="5">320x240 15 fps</option>
+                    <option value="10">320x240 30 fps</option>
+                    <option value="20">352x288 30 fps</option>
+                    <option value="25">640x480 15 fps</option>
+                    <option value="30">640x480 30 fps</option>
+                    <option value="35">800x480 30 fps</option>
+                    <option value="40">960x720 30 fps</option>
+                    <option value="50">1024x768 30 fps</option>
+                    <option value="55">1280x720 15 fps</option>
+                    <option value="60" selected="selected">1280x720 30 fps, kbps min.800 max.4000 start1200</option>
+                    <option value="63">1280x720 60 fps</option>
+                    <option value="65">1280x768 15 fps</option>
+                    <option value="70">1280x768 30 fps</option>
+                    <option value="75">1536x768 30 fps</option>
+                    <option value="80">1280x960 30 fps</option>
+                    <option value="90">1600x768 30 fps</option>
+                    <option value="95">1640x1232 15 fps</option>
+                    <option value="97">1640x1232 30 fps</option>
+                    <option value="98">1792x896 15 fps</option>
+                    <option value="99">1792x896 30 fps</option>
+                    <option value="100">1920x1080 15 fps</option>
+                    <option value="105">1920x1080 30 fps</option>
+                </select>
+                <p id="note1_"><small>NOTE: if your browser does not support the hardware codec yet, try Firefox with the codec plugin enabled or a recent version of Chrome.</small></p>
+            </div>
+         <div id="commands">
+            <details open>
+                <summary><b>Advanced options</b></summary>
+                <fieldset>
+                    <span>Remote Peer/Signalling Server Address: </span><input required type="text" id="signalling_server" value="127.0.0.1:8080" title="<host>:<port>, default address is autodetected"/><br>
+                    <span>Optional ICE Servers (STUN/TURN): </span><input type="text" id="ice_servers" value="" title="array of RTCIceServer objects as valid JSON string"/><br>
+                    <span>Trickle ICE: </span>
+                    <select onclick="trickleice_selection();" id="trickleice" name="trickleice" title="enable trickle ice">
+                        <option value="auto">auto</option>
+                        <option value="true" selected="selected">true</option>
+                        <option value="false">false</option>
+                    </select>
+                </fieldset>
+            </details>
+            <button id="start" style="background-color: green; color: white" onclick="start();">Call!</button>
+            <button disabled id="stop" style="background-color: red; color: white" onclick="stop();">Hang up</button>
+        </div><br>       </fieldset>
+    </body>
 </html>

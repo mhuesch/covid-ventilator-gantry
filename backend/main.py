@@ -13,6 +13,10 @@ def index():
 def stream():
     return send_from_directory('static', 'stream.html')
 
+@app.route('/coordinates')
+def coordinates():
+    return send_from_directory('static', 'coordinates.html')
+
 @socketio.on('message')
 def handle_message(message):
     print('received generic message: ' + message)
