@@ -12,6 +12,12 @@ $ pip3 install -r requirements.txt
 $ python3 main.py
 ```
 
+### frontend
+
+Browse to http://localhost:5000/
+
+---
+
 # Architecture v0
 
 * Python backend sends a webcam stream to a JavaScript frontend, which runs in the browser
@@ -23,4 +29,4 @@ $ python3 main.py
 
 # TODO
 
-* [ ] encrypt the communication channel between the client and the server. this is important!
+* [ ] Important! : encrypt the communication channel between the client and the server.
