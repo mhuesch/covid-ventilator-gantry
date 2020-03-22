@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, send_from_directory
 from flask_socketio import SocketIO, emit
 
 app = Flask(__name__)
@@ -7,7 +7,11 @@ socketio = SocketIO(app)
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return send_from_directory('static', 'index.html')
+
+@app.route('/stream')
+def stream():
+    return send_from_directory('static', 'stream.html')
 
 @socketio.on('message')
 def handle_message(message):

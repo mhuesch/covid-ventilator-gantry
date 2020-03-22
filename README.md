@@ -32,7 +32,13 @@ $ pipenv run python3 backend/main.py
 
 ### 3. Frontend
 
-Browse to http://localhost:5000/
+Browse to `http://localhost:5000/` for the SocketIO click event coordinates demo.
+
+On a Raspberry Pi, start the webcam WebRTC streaming server with:
+```
+uv4l --driver raspicam --auto-video_nr --encoding h264
+```
+and then browse to `http://localhost:5000/stream` for the pi camera WebRTC streaming demo.
 
 ---
 
