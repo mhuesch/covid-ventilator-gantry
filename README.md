@@ -11,6 +11,7 @@ pip 19.3.1 (python 3.7)
 
 ### 2. Backend
 
+To use venv:
 ```
 $ cd backend
 $ python3 -m venv env
@@ -19,6 +20,14 @@ $ pip3 install -r requirements.txt
 
 # run it
 $ python3 main.py
+```
+
+To use pipenv:
+```
+$ pipenv install
+
+# run it
+$ pipenv run python3 backend/main.py
 ```
 
 ### 3. Frontend
