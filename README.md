@@ -41,3 +41,4 @@ Browse to http://localhost:5000/
 # TODO
 
 * [ ] Important! : encrypt the communication channel between the client and the server.
+* [ ] Render a video stream inside of the `contentContainer` div
