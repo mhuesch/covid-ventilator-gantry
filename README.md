@@ -45,7 +45,7 @@ If you are running the backend app on port 80, instead go to `http://localhost:5
 
 On a Raspberry Pi, start the webcam WebRTC streaming server with:
 ```
-uv4l --driver raspicam --auto-video_nr --encoding h264
+uv4l --driver raspicam --auto-video_nr --encoding h264 --server-option '--port=5004' --server-option '--bind-host-address=0.0.0.0'
 ```
 
 Then browse to `http://localhost:5000/stream` for the pi camera WebRTC streaming demo.

@@ -62,7 +62,7 @@ def main():
         description='Run server for remote ventilator UI.'
     )
     parser.add_argument(
-        '--host', default='127.0.0.1',
+        '--host', default='0.0.0.0',
         help='The hostname or IP address for the server to listen on.'
     )
     parser.add_argument(

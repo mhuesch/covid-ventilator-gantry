@@ -22,7 +22,7 @@
 
             var signalling_server_hostname = location.hostname || "127.0.0.1";
             // var signalling_server_address = signalling_server_hostname + ':' + (location.port || (location.protocol === 'https:' ? 443 : 80));
-            var signalling_server_address = signalling_server_hostname + ':8080';
+            var signalling_server_address = signalling_server_hostname + ':5004';
             var isFirefox = typeof InstallTrigger !== 'undefined';// Firefox 1.0+
 
             addEventListener("DOMContentLoaded", function () {
@@ -601,7 +601,7 @@
             <details open>
                 <summary><b>Advanced options</b></summary>
                 <fieldset>
-                    <span>Remote Peer/Signalling Server Address: </span><input required type="text" id="signalling_server" value="127.0.0.1:8080" title="<host>:<port>, default address is autodetected"/><br>
+                    <span>Remote Peer/Signalling Server Address: </span><input required type="text" id="signalling_server" value="localhost:5004" title="<host>:<port>, default address is autodetected"/><br>
                     <span>Optional ICE Servers (STUN/TURN): </span><input type="text" id="ice_servers" value="" title="array of RTCIceServer objects as valid JSON string"/><br>
                     <span>Trickle ICE: </span>
                     <select onclick="trickleice_selection();" id="trickleice" name="trickleice" title="enable trickle ice">
