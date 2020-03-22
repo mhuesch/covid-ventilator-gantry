@@ -7,10 +7,15 @@ socketio = SocketIO(app)
 
 @app.route('/')
 def index():
-    return "Hello, World!"
+    return render_template('index.html')
+
+@socketio.on('message')
+def handle_message(message):
+    print('received generic message: ' + message)
 
 @socketio.on('my event')
 def test_message(message):
+    print("received 'my event': " + str(message))
     emit('my response', {'data': 'got it!'})
 
 if __name__ == '__main__':
