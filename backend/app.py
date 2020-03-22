@@ -2,6 +2,8 @@
 
 # Built-in imports
 
+import argparse
+
 # Package imports
 
 from flask import Flask, send_from_directory
@@ -54,5 +56,21 @@ def receive_coordinates(data):
     print("received 'coordinates': " + str(data))
 
 
+def main():
+    """Run the app."""
+    parser = argparse.ArgumentParser(
+        description='Run server for remote ventilator UI.'
+    )
+    parser.add_argument(
+        '--host', default='127.0.0.1',
+        help='The hostname or IP address for the server to listen on.'
+    )
+    parser.add_argument(
+        '--port', default=5000, help='The port for the server to listen on.'
+    )
+    args = parser.parse_args()
+    socketio.run(app, host=args.host, port=args.port)
+
+
 if __name__ == '__main__':
-    socketio.run(app)
+    main()

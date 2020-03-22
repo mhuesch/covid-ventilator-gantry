@@ -30,26 +30,27 @@ $ pipenv install
 $ pipenv run python3 backend/main.py
 ```
 
+To use pipenv and run the app on port 80:
+```
+$ sudo pipenv install
+
+# run it
+$ sudo pipenv run python3 backend/main.py --port 80
+```
+
 ### 3. Frontend
 
 Browse to `http://localhost:5000/coordinates` for the SocketIO click event coordinates demo.
+If you are running the backend app on port 80, instead go to `http://localhost:5000/coordinates`
 
 On a Raspberry Pi, start the webcam WebRTC streaming server with:
 ```
 uv4l --driver raspicam --auto-video_nr --encoding h264
 ```
 
-Then browse to `http://localhost:5000/stream` for the pi camera WebRTC streaming demo. Or browse to `http://localhost:5000` for the full demo with WebRTC streaming and click event coordinates.
-
-
-### 4. Deployment
-
-To deploy the app on port 80 with pipenv, run:
-```
-sudo pipenv run flask run --host=0.0.0.0 --port=80
-```
-
-If this fails, first run `sudo pipenv install` and then try again.
+Then browse to `http://localhost:5000/stream` for the pi camera WebRTC streaming demo.
+Or browse to `http://localhost:5000` for the full demo with WebRTC streaming and click event coordinates.
+As before, if you are running the backend app on port 80, use `localhost` instead of `localhost:5000`.
 
 ---
 
