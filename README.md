@@ -41,6 +41,16 @@ uv4l --driver raspicam --auto-video_nr --encoding h264
 
 Then browse to `http://localhost:5000/stream` for the pi camera WebRTC streaming demo. Or browse to `http://localhost:5000` for the full demo with WebRTC streaming and click event coordinates.
 
+
+### 4. Deployment
+
+To deploy the app on port 80 with pipenv, run:
+```
+sudo pipenv run flask run --host=0.0.0.0 --port=80
+```
+
+If this fails, first run `sudo pipenv install` and then try again.
+
 ---
 
 # Architecture v0

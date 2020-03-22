@@ -20,8 +20,6 @@
             transition: left .5s ease-in, top .5s ease-in;
         }
         </style>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
-        <script src="//www.kirupa.com/prefixfree.min.js"></script>
         <script type="text/javascript">
 
             // WebRTC
@@ -532,60 +530,6 @@
             }
 
             window.onload = function () {
-
-                // SocketIO
-                var socket = io();
-                socket.on('connect', function() {
-                  socket.emit('my event', {data: 'I\'m connected!'});
-                });
-                socket.on('my response', function(data) {
-                  console.log(data);
-                });
-
-                // Box
-                var theThing = document.querySelector("#thing");
-                var contentContainer = document.querySelector("#contentContainer");
-
-                contentContainer.addEventListener("click", getClickPosition, false);
-
-                // Coordinates
-                function getClickPosition(e) {
-                    var parentPosition = getPosition(e.currentTarget);
-                    var xPosition = e.clientX - parentPosition.x - (theThing.clientWidth / 2);
-                    var yPosition = e.clientY - parentPosition.y - (theThing.clientHeight / 2);
-
-                    theThing.style.left = xPosition + "px";
-                    theThing.style.top = yPosition + "px";
-                    socket.emit('coordinates', {data: {'x': xPosition, 'y': yPosition}})
-                }
-
-                // Helper function to get an element's exact position
-                function getPosition(el) {
-                  var xPos = 0;
-                  var yPos = 0;
-
-                  while (el) {
-                    if (el.tagName == "BODY") {
-                      // deal with browser quirks with body/window/document and page scroll
-                      var xScroll = el.scrollLeft || document.documentElement.scrollLeft;
-                      var yScroll = el.scrollTop || document.documentElement.scrollTop;
-
-                      xPos += (el.offsetLeft - xScroll + el.clientLeft);
-                      yPos += (el.offsetTop - yScroll + el.clientTop);
-                    } else {
-                      // for all other non-BODY elements
-                      xPos += (el.offsetLeft - el.scrollLeft + el.clientLeft);
-                      yPos += (el.offsetTop - el.scrollTop + el.clientTop);
-                    }
-
-                    el = el.offsetParent;
-                  }
-                  return {
-                    x: xPos,
-                    y: yPos
-                  };
-                }
-
                 if (false) {
                     start();
                 }
@@ -635,7 +579,7 @@
                     Your browser does not support the video tag.
                 </video>
                 <div id="contentContainer" class="overlay">
-                    <img id="thing" src="//www.kirupa.com/images/smiley_red.png">
+                    <img id="thing" src="static/smiley_red.png">
                 </div>
             </div>
         </div>
@@ -690,5 +634,9 @@
             <button id="start" style="background-color: green; color: white" onclick="start();">Call!</button>
             <button disabled id="stop" style="background-color: red; color: white" onclick="stop();">Hang up</button>
         </div><br>       </fieldset>
+
+    <script src="static/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="static/prefixfree.min.js"></script>
+    <script src="static/coordinates.js"></script>
     </body>
 </html>
