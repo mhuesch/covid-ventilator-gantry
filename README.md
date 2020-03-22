@@ -2,9 +2,7 @@
 
 ### 1. Prerequisites
 
-`pip3` and `python3` must be on your path.
-
-This has only been tested with
+`pip3` and `python3` must be on your path. This *should* work with all python 3+, but it has only been tested with:
 
 ```
 Python 3.7.6
