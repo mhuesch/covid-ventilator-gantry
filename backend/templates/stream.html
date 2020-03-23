@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>UV4L WebRTC</title>
+
+{% include 'stream/style_includes.html' %}
+
+    </head>
+    <body>
+        <h1>
+            <span>WebRTC Webcam Stream Viewer</span>
+        </h1>
+
+{% include 'stream/dom_video_start.html' %}
+                <p class="overlay">remote</p>
+{% include 'stream/dom_video_end.html' %}
+
+{% include 'stream/dom_options.html' %}
+
+{% include 'stream/script_includes.html' %}
+
+    </body>
+</html>

@@ -1,0 +1,48 @@
+        <fieldset>
+            <legend><b>Remote peer options</b></legend>
+            <div>
+                <span>Video:</span>
+                <label><input type="checkbox" onclick="remote_hw_vcodec_selection();"  id="remote_hw_vcodec" name="remote_hw_vcodec" value="remote_hw_vcodec" title="try to force the use of the hardware codec for both encoding and decoding if enabled and supported">force use of hardware codec for</label>
+                <select id="remote_vformat" name="remote_vformat" onclick="remote_hw_vcodec_format_selection();" title="available resolutions and frame rates at the min., max. and start configured bitrates for adaptive streaming which will be scaled from the base 720p 30fps">
+                    <option value="5">320x240 15 fps</option>
+                    <option value="10">320x240 30 fps</option>
+                    <option value="20">352x288 30 fps</option>
+                    <option value="25">640x480 15 fps</option>
+                    <option value="30">640x480 30 fps</option>
+                    <option value="35">800x480 30 fps</option>
+                    <option value="40">960x720 30 fps</option>
+                    <option value="50">1024x768 30 fps</option>
+                    <option value="55">1280x720 15 fps</option>
+                    <option value="60" selected="selected">1280x720 30 fps, kbps min.800 max.4000 start1200</option>
+                    <option value="63">1280x720 60 fps</option>
+                    <option value="65">1280x768 15 fps</option>
+                    <option value="70">1280x768 30 fps</option>
+                    <option value="75">1536x768 30 fps</option>
+                    <option value="80">1280x960 30 fps</option>
+                    <option value="90">1600x768 30 fps</option>
+                    <option value="95">1640x1232 15 fps</option>
+                    <option value="97">1640x1232 30 fps</option>
+                    <option value="98">1792x896 15 fps</option>
+                    <option value="99">1792x896 30 fps</option>
+                    <option value="100">1920x1080 15 fps</option>
+                    <option value="105">1920x1080 30 fps</option>
+                </select>
+                <p id="note1_"><small>NOTE: if your browser does not support the hardware codec yet, try Firefox with the codec plugin enabled or a recent version of Chrome.</small></p>
+            </div>
+         <div id="commands">
+            <details open>
+                <summary><b>Advanced options</b></summary>
+                <fieldset>
+                    <span>Remote Peer/Signalling Server Address: </span><input required type="text" id="signalling_server" value="localhost:5004" title="<host>:<port>, default address is autodetected"/><br>
+                    <span>Optional ICE Servers (STUN/TURN): </span><input type="text" id="ice_servers" value="" title="array of RTCIceServer objects as valid JSON string"/><br>
+                    <span>Trickle ICE: </span>
+                    <select onclick="trickleice_selection();" id="trickleice" name="trickleice" title="enable trickle ice">
+                        <option value="auto">auto</option>
+                        <option value="true" selected="selected">true</option>
+                        <option value="false">false</option>
+                    </select>
+                </fieldset>
+            </details>
+            <button id="start" style="background-color: green; color: white" onclick="start();">Call!</button>
+            <button disabled id="stop" style="background-color: red; color: white" onclick="stop();">Hang up</button>
+        </div><br>       </fieldset>

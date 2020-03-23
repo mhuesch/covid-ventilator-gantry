@@ -1,0 +1,15 @@
+#contentContainer {
+    width: 640px;
+    height: 480px;
+    margin: 0px;
+    border: 1px black solid;
+    overflow: hidden;
+    background-color: rgba(255, 255, 255, 0);
+    cursor: pointer;
+}
+#thing {
+    position: relative;
+    left: 0px;
+    top: 0px;
+    transition: left .5s ease-in, top .5s ease-in;
+}

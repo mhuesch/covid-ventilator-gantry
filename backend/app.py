@@ -6,7 +6,7 @@ import argparse
 
 # Package imports
 
-from flask import Flask, send_from_directory
+from flask import Flask, render_template
 
 from flask_socketio import SocketIO, emit
 
@@ -20,19 +20,19 @@ socketio = SocketIO(app)
 @app.route('/')
 def index():
     """Serve the integrated demo."""
-    return send_from_directory('static', 'index.html')
+    return render_template('index.html')
 
 
 @app.route('/stream')
 def stream():
     """Serve the WebRTC stream demo."""
-    return send_from_directory('static', 'stream.html')
+    return render_template('stream.html')
 
 
 @app.route('/coordinates')
 def coordinates():
     """Serve the coordinates demo."""
-    return send_from_directory('static', 'coordinates.html')
+    return render_template('coordinates.html')
 
 
 # SocketIO handlers
