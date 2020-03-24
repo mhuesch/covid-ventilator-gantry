@@ -19,7 +19,7 @@ $ source env/bin/activate
 $ pip3 install -r requirements.txt
 
 # run it
-$ python3 main.py
+$ python3 app.py
 ```
 
 To use pipenv:
@@ -27,7 +27,7 @@ To use pipenv:
 $ pipenv install
 
 # run it
-$ pipenv run python3 backend/main.py
+$ pipenv run python3 backend/app.py
 ```
 
 To use pipenv and run the app on port 80:
@@ -35,7 +35,7 @@ To use pipenv and run the app on port 80:
 $ sudo pipenv install
 
 # run it
-$ sudo pipenv run python3 backend/main.py --port 80
+$ sudo pipenv run python3 backend/app.py --port 80
 ```
 
 ### 3. Frontend
