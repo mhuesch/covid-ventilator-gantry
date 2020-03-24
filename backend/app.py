@@ -56,6 +56,12 @@ def receive_coordinates(data):
     print("received 'coordinates': " + str(data))
 
 
+@socketio.on('knob')
+def receive_knob(data):
+    """Handle received knob data."""
+    print("received 'knob': " + str(data))
+
+
 def main():
     """Run the app."""
     parser = argparse.ArgumentParser(
