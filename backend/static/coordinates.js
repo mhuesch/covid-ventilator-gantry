@@ -51,3 +51,17 @@ function getPosition(el) {
     y: yPos
   };
 }
+
+// Functions to communicate knob control to backend
+function knob_clockwise() {
+  knob_unified("+1")
+}
+function knob_press() {
+  knob_unified("X")
+}
+function knob_counterclockwise() {
+  knob_unified("-1")
+}
+function knob_unified(msg) {
+  socket.emit('knob', {data: msg});
+}
