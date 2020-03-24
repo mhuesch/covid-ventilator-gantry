@@ -11,4 +11,4 @@ Flask-SocketIO = "==4.2.1"
 eventlet = "*"
 
 [requires]
-python_version = "3.7"
+python_version = "3.6"
