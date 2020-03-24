@@ -41,7 +41,7 @@ $ sudo pipenv run python3 backend/main.py --port 80
 ### 3. Frontend
 
 Browse to `http://localhost:5000/coordinates` for the SocketIO click event coordinates demo.
-If you are running the backend app on port 80, instead go to `http://localhost:5000/coordinates`
+If you are running the backend app on port 80, instead go to `http://localhost/coordinates`
 
 On a Raspberry Pi, start the webcam WebRTC streaming server with:
 ```
