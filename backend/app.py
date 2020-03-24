@@ -69,6 +69,7 @@ def main():
         '--port', default=5000, help='The port for the server to listen on.'
     )
     args = parser.parse_args()
+    print('Running on {}:{}...'.format(args.host, args.port))
     socketio.run(app, host=args.host, port=args.port)
 
 
