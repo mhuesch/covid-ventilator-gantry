@@ -6,6 +6,7 @@
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title>Janus WebRTC Gateway: Streaming Demo</title>
 
+{% include 'coordinates/style_includes.html' %}
 {% include 'janus/stream/style_includes.html' %}
 
     </head>
@@ -23,12 +24,16 @@
                 <div class="col-md-12">
 
 {% include 'janus/stream/dom_video_start.html' %}
+
+{% include 'coordinates/dom.html' %}
+
 {% include 'janus/stream/dom_video_end.html' %}
 
                 </div>
             </div>
         </div>
 
+{% include 'coordinates/script_includes.html' %}
 {% include 'janus/stream/script_includes.html' %}
 
     </body>
