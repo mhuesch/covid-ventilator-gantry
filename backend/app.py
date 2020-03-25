@@ -42,7 +42,7 @@ def janus_stream():
 @app.route('/janus/echo')
 def janus_echo():
     """Serve the Janus WebRTC echo demo."""
-    return app.send_static_file('echotest.html')
+    return app.send_static_file('janus/echo.html')
 
 
 @app.route('/coordinates')
