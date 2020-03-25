@@ -17,16 +17,32 @@ socketio = SocketIO(app)
 
 # Routes
 
-@app.route('/')
-def index():
-    """Serve the integrated demo."""
-    return render_template('index.html')
+@app.route('/uv4l')
+def uv4l_index():
+    """Serve the UV4L integrated demo."""
+    return render_template('uv4l/index.html')
 
 
-@app.route('/stream')
-def stream():
-    """Serve the WebRTC stream demo."""
-    return render_template('stream.html')
+@app.route('/uv4l/stream')
+def uv4l_stream():
+    """Serve the Uv4L WebRTC stream demo."""
+    return render_template('uv4l/stream.html')
+
+@app.route('/janus')
+def janus_index():
+    """Serve the Janus integrated demo."""
+    return render_template('janus/index.html')
+
+
+@app.route('/janus/stream')
+def janus_stream():
+    """Serve the Janus WebRTC stream demo."""
+    return render_template('janus/stream.html')
+
+@app.route('/janus/echo')
+def janus_echo():
+    """Serve the Janus WebRTC echo demo."""
+    return app.send_static_file('echotest.html')
 
 
 @app.route('/coordinates')
